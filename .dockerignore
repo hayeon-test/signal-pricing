@@ -1,0 +1,12 @@
+.env
+repos.cfg
+repos_init.cfg
+nvtool*
+data/
+processed/
+raw/
+__pycache__/
+.ipynb_checkpoints/
+.Trash*/
+regular/
+ignore*

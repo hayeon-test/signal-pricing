@@ -1,0 +1,15 @@
+   
+--------------------------------------------------------------------------------
+Installation Complete!
+    App:                     {{ .Values.appPrefix }} 
+    modelTrainingImage:      {{ .Values.modelTrainingImage.repository }}
+    featureEngineeringImage: {{ .Values.featureEngineeringImage.repository }}
+    replicaCount:            {{ .Values.replicaCount }} 
+    resources:               {{- toYaml .Values.resources | nindent 12 }}
+
+You can monitor the application by running the following kubelet command:
+    kubectl get all -l 'app in ({{ .Values.appPrefix }},{{ .Values.appPrefix }}-tensorboard)' -o wide
+
+Tensorboard will soon be available at:
+    http://{{ .Values.tensorboardNode }}:{{ .Values.service.nodePort }}
+--------------------------------------------------------------------------------

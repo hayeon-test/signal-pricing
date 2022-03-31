@@ -1,0 +1,103 @@
+services:
+  eda:
+    build:
+      args:
+        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.12-py3
+        - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
+        - SYMBOL=NVDA
+        - INTERVAL=15min
+        - DATAPATH=/data
+        - DS=pricing
+      context: .
+      dockerfile: Dockerfile.features
+      shm_size: "8gb"
+    entrypoint:
+      [
+        "jupyter",
+        "lab",
+        "--ip=0.0.0.0",
+        "--no-browser",
+        "--allow-root",
+        "--port=8888",
+        "--notebook-dir=/workspace",
+        "--NotebookApp.token=''",
+        "--NotebookApp.password=''",
+        "--NotebookApp.allow_origin='*'",
+        "--NotebookApp.base_url=/",
+      ]
+    ports:
+      - "8888:8888"
+    image: registry.local:31500/signal-pricing-eda:${VERSION}
+    network_mode: "host"
+    platform: linux/amd64
+    runtime: nvidia
+    shm_size: "8gb"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    volumes:
+      - type: bind
+        source: /mnt/nas/signal-pricing
+        target: /data
+      - type: bind
+        source: ./feature-engineering
+        target: /workspace
+  feature-engineering:
+    build:
+      args:
+        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.12-py3
+        - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
+        - SYMBOL=NVDA
+        - INTERVAL=15min
+        - DATAPATH=/data
+        - DS=pricing
+      context: .
+      dockerfile: Dockerfile.features
+      shm_size: "8gb"
+    command: ./get_data.sh
+    image: registry.local:31500/signal-pricing-feature-engineering:${VERSION}
+    network_mode: "host"
+    platform: linux/amd64
+    runtime: nvidia
+    shm_size: "8gb"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    volumes:
+      - type: bind
+        source: /mnt/nas/signal-pricing
+        target: /data
+  model-training:
+    build:
+      args:
+        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.10-py3
+        - DATAPATH=/data
+      context: .
+      dockerfile: Dockerfile.training
+      shm_size: "8gb"
+    command: ./run_training.sh
+    image: registry.local:31500/signal-pricing-model-training:${VERSION}
+    network_mode: "host"
+    platform: linux/amd64
+    runtime: nvidia
+    shm_size: "8gb"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+  inference:
+    build:
+      args:
+        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.10-py3
+        - DATAPATH=/data
+      context: .
+      dockerfile: Dockerfile.training
+      shm_size: "8gb"
+    command: ./run_training.sh
+    image: registry.local:31500/signal-pricing-inference:${VERSION}
+    network_mode: "host"
+    platform: linux/amd64
+    runtime: nvidia
+    shm_size: "8gb"
+    ulimits:
+      memlock: -1
+      stack: 67108864

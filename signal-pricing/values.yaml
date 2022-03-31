@@ -1,0 +1,44 @@
+# Default values for signal-pricing.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+appPrefix: signal-pricing
+envVars:
+  ALPHA_VANTAGE_API_KEY: demo
+  BATCH_SIZE: 64
+  EPOCHS: 20
+  INTERVAL: 15min
+  LR: 1e-3
+  NGPU: 1
+  SEED: 1
+  SYMBOL: NVDA
+  TRAIN_SAMPLE: 64000
+  VALIDATION_SAMPLE: 14000
+featureEngineeringImage:
+  imagePullSecrets:
+    - ngc-secret
+  pullPolicy: Always
+  repository: registry.local:31500/signal-pricing-feature-engineering
+  tag: ""
+imageCredentials:
+  email: user@nvidia.com
+  password: api-key
+  registry: nvcr.io
+  username: $oauthtoken
+modelTrainingImage:
+  imagePullSecrets:
+    - ngc-secret
+  pullPolicy: Always
+  repository: registry.local:31500/signal-pricing-model-training
+  tag: ""
+nfs:
+  path: /volume1/brandon/signal-pricing
+  server: 192.168.1.232
+persistentVolume:
+  storage: 128Gi
+replicaCount: 1
+resources:
+  limits:
+    nvidia.com/gpu: 1
+service:
+  nodePort: 30600
+tensorboardNode: olympus-01

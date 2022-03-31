@@ -1,0 +1,49 @@
+# Copyright (c) 2021-2022, NVIDIA CORPORATION. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#           http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+ARG FROM_IMAGE_NAME
+FROM ${FROM_IMAGE_NAME}
+
+# Set workdir and paths
+WORKDIR /workspace
+ENV PYTHONPATH /workspace
+
+# The name of the equity of your choice.
+ARG SYMBOL
+ENV SYMBOL=${SYMBOL}
+
+# Time interval between two consecutive data points in the time series. The 
+# following values are supported: 1min, 5min, 15min, 30min, 60min
+ARG INTERVAL
+ENV INTERVAL=${INTERVAL}
+
+# Alpha Vantage API key
+# Claim your free API key at https://www.alphavantage.co/support/#api-key.
+# Standard API call frequency is 5 calls per minute and 500 calls per day. Visit 
+# https://www.alphavantage.co/premium/ if you would like to target a higher API call frequency.
+# Two years of minute-level intraday data contains over 2 million data points, 
+# which can take up to Gigabytes of memory. To ensure optimal API response 
+# speed, the trailing 2 years of intraday data is evenly divided into 24 
+# "slices" - year1month1, year1month2, year1month3, ..., year1month11, 
+# year1month12, year2month1, year2month2, year2month3, ..., year2month11, 
+# year2month12. Each slice is a 30-day window, with year1month1 being the most 
+# recent and year2month12 being the farthest from today. 
+ARG ALPHA_VANTAGE_API_KEY
+ENV ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
+
+# Add model files to workspace
+ADD feature-engineering /workspace
+
+# Install requirements
+RUN pip install --no-cache-dir -r /workspace/requirements.txt
