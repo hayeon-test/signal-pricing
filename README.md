@@ -208,13 +208,13 @@ To view the full list of available options and their descriptions, use the `-h` 
 The following example output is printed when running the model:
 
 ```
-usage: train.py [-h] --data_path DATA_PATH --dataset {electricity,traffic} [--epochs EPOCHS] [--sample_data SAMPLE_DATA SAMPLE_DATA] [--batch_size BATCH_SIZE] [--lr LR] [--seed SEED] [--use_amp] [--clip_grad CLIP_GRAD]
+usage: train.py [-h] --data_path DATA_PATH --dataset {pricing} [--epochs EPOCHS] [--sample_data SAMPLE_DATA SAMPLE_DATA] [--batch_size BATCH_SIZE] [--lr LR] [--seed SEED] [--use_amp] [--clip_grad CLIP_GRAD]
                 [--early_stopping EARLY_STOPPING] [--results RESULTS] [--log_file LOG_FILE] [--distributed_world_size N] [--distributed_rank DISTRIBUTED_RANK] [--local_rank LOCAL_RANK] [--overwrite_config OVERWRITE_CONFIG]
 
 optional arguments:
   -h, --help            show this help message and exit
   --data_path DATA_PATH
-  --dataset {electricity,traffic}
+  --dataset {pricing}
   --epochs EPOCHS
   --sample_data SAMPLE_DATA SAMPLE_DATA
   --batch_size BATCH_SIZE
