@@ -166,23 +166,21 @@ For those unable to use the PyTorch NGC container to set up the required environ
 To train your model using mixed or TF32 precision with Tensor Cores, perform the following steps using the default parameters of the TFT model on any of the benchmark datasets. For the specifics concerning training and inference, refer to the [Advanced](#advanced) section.
 
 1. Build the Docker images
-   ```bash
+    ```bash
     docker-compose build model-training feature-engineering
-   ```
+    ```
 2. Publish the Docker images somwehere...
-
-  ```bash
-  docker-compose push model-training feature-engineering
-  ```
+    ```bash
+    docker-compose push model-training feature-engineering
+    ```
 
 3. Launch the service through Helm. This will launch data downloading, processing, training and monitoring. The end goal of this would be an end-to-end example of online learning. Where the model may continue to learn as new data are streamed to the /data source. The example of stock data is contriveed but Alpha Vantage offers a very stable API for example purposes.
-
-  ```bash
-  helm install signal-pricing signal-pricing \
-    --set imageCredentials.password=<NGC_API_KEY> \
-    --set imageCredentials.email=<NGC_USER_EMAIL> \
-    --set envVars.ALPHA_VANTAGE_API_KEY=<ALPHA_VANTAGE_API_KEY>
-  ```
+    ```bash
+    helm install signal-pricing signal-pricing \
+      --set imageCredentials.password=<NGC_API_KEY> \
+      --set imageCredentials.email=<NGC_USER_EMAIL> \
+      --set envVars.ALPHA_VANTAGE_API_KEY=<ALPHA_VANTAGE_API_KEY>
+    ```
 
 Now that you have your model trained and evaluated, you can choose to compare your training results with our [Training accuracy results](#training-accuracy-results). You can also choose to benchmark your performance to [Training performance benchmark](#training-performance-results). Following the steps in these sections will ensure that you achieve the same accuracy and performance results as stated in the [Results](#results) section.
 
