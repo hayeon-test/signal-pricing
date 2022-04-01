@@ -15,7 +15,7 @@ spec:
       labels: 
         app: {{ .Values.appPrefix }}-tensorboard
     spec:
-      nodeName: {{ .Values.tensorboardNode }}
+      nodeName: {{ .Values.uiNode }}
       imagePullSecrets:
         - name: ngc-secret
       containers:
@@ -26,13 +26,53 @@ spec:
               containerPort: 6006
               protocol: TCP
           command: ["/bin/bash"]
-          args: ["-c", "pip install -U tensorboard-plugin-profile && tensorboard --logdir=/data/results --bind_all"]
+          args: ["-c", "pip install -U tensorboard-plugin-profile torch_tb_profiler && tensorboard --logdir=/data/results --bind_all"]
           env:
             - name: CUDA_VISIBLE_DEVICES
               value: "-1"
           volumeMounts:
             - name: {{ .Values.appPrefix }}-storage
               mountPath: /data/results
+      volumes:
+        - name: {{ .Values.appPrefix }}-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.appPrefix }}-pvc
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.appPrefix }}-analytics
+  labels:
+    app: {{ .Values.appPrefix }}-analytics
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.appPrefix }}-analytics
+  serviceName: {{ .Values.appPrefix }}-analytics
+  replicas: 1
+  template:
+    metadata:
+      labels: 
+        app: {{ .Values.appPrefix }}-analytics
+    spec:
+      nodeName: {{ .Values.uiNode }}
+      imagePullSecrets:
+        - name: ngc-secret
+      containers:
+        - name: {{ .Values.appPrefix }}-analytics
+          image: "{{ .Values.analyticServiceImage.repository }}:{{ .Values.analyticServiceImage.tag | default .Chart.AppVersion }}"
+          ports:
+            - name: analytics
+              containerPort: 8000
+              protocol: TCP
+          command: ["/bin/bash"]
+          args: ["-c", "python /workspace/analytic-service.py"]
+          env:
+            - name: CUDA_VISIBLE_DEVICES
+              value: "-1"
+          volumeMounts:
+            - name: {{ .Values.appPrefix }}-storage
+              mountPath: /data
       volumes:
         - name: {{ .Values.appPrefix }}-storage
           persistentVolumeClaim:

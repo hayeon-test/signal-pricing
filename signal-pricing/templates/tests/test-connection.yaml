@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ .Values.appPrefix }}-test-connection"
+  name: "{{ .Values.appPrefix }}-test-analytic-connection"
   labels:
     app: {{ .Values.appPrefix }}
   annotations:
@@ -11,5 +11,21 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['{{ .Values.appPrefix }}:{{ .Values.service.port }}']
+      args: ['{{ .Values.appPrefix }}:{{ .Values.analyticService.port }}']
+  restartPolicy: Never
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Values.appPrefix }}-test-tensorboard-connection"
+  labels:
+    app: {{ .Values.appPrefix }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ .Values.appPrefix }}:{{ .Values.tensorboardService.port }}']
   restartPolicy: Never

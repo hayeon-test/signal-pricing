@@ -7,9 +7,18 @@ Installation Complete!
     replicaCount:            {{ .Values.replicaCount }} 
     resources:               {{- toYaml .Values.resources | nindent 12 }}
 
-You can monitor the application by running the following kubelet command:
-    kubectl get all -l 'app in ({{ .Values.appPrefix }},{{ .Values.appPrefix }}-tensorboard)' -o wide
+You can monitor the application by running the following kubelet commands:
+Workloads:
+    kubectl get all -l 'app in ({{ .Values.appPrefix }},{{ .Values.appPrefix }}-tensorboard,{{ .Values.appPrefix }}-analytics)' -o wide
+    
+Storage:
+    kubectl get sc {{ .Values.appPrefix }}-sc
+    kubectl get pv {{ .Values.appPrefix }}-pv
+    kubectl get pvc {{ .Values.appPrefix }}-pvc
 
-Tensorboard will soon be available at:
-    http://{{ .Values.tensorboardNode }}:{{ .Values.service.nodePort }}
+Tensorboard service will soon be available at:
+    http://{{ .Values.uiNode }}:{{ .Values.tensorboardService.nodePort }}
+
+Analytics service will soon be available at:
+    http://{{ .Values.uiNode }}:{{ .Values.analyticService.nodePort }}
 --------------------------------------------------------------------------------

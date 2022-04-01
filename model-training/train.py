@@ -27,6 +27,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from apex import amp
 from apex.optimizers import FusedAdam
+
 # from torch.nn.parallel import DistributedDataParallel as DDP
 from apex.parallel import DistributedDataParallel as DDP
 from configuration import CONFIGS
@@ -42,7 +43,9 @@ from inference import predict
 
 
 def load_dataset(args, config):
-    train_split = TFTBinaryDataset(os.path.join(args.data_path, "train.bin"), config)
+    train_split = TFTBinaryDataset(
+        os.path.join(args.data_path, "train.bin"), config
+    )
     train_split = sample_data(train_split, args.sample_data[0])
     if args.distributed_world_size > 1:
         data_sampler = DistributedSampler(
@@ -62,7 +65,9 @@ def load_dataset(args, config):
         pin_memory=True,
     )
 
-    valid_split = TFTBinaryDataset(os.path.join(args.data_path, "valid.bin"), config)
+    valid_split = TFTBinaryDataset(
+        os.path.join(args.data_path, "valid.bin"), config
+    )
     valid_split = sample_data(valid_split, args.sample_data[1])
     if args.distributed_world_size > 1:
         data_sampler = DistributedSampler(
@@ -82,7 +87,9 @@ def load_dataset(args, config):
         pin_memory=True,
     )
 
-    test_split = TFTBinaryDataset(os.path.join(args.data_path, "test.bin"), config)
+    test_split = TFTBinaryDataset(
+        os.path.join(args.data_path, "test.bin"), config
+    )
     if args.distributed_world_size > 1:
         data_sampler = DistributedSampler(
             test_split,
@@ -119,7 +126,9 @@ def main(args):
     args.local_rank = int(os.environ.get("LOCAL_RANK", 0))
     if args.distributed_world_size > 1:
         dist.init_process_group(backend="nccl", init_method="env://")
-        print_once(f"Distributed training with {args.distributed_world_size} GPUs")
+        print_once(
+            f"Distributed training with {args.distributed_world_size} GPUs"
+        )
         args.distributed_rank = dist.get_rank()
         torch.cuda.set_device(args.local_rank)
         torch.cuda.synchronize()
@@ -145,13 +154,17 @@ def main(args):
     if args.overwrite_config:
         config.__dict__.update(json.loads(args.overwrite_config))
 
-    dllogger.log(step="HPARAMS", data={**vars(args), **vars(config)}, verbosity=1)
+    dllogger.log(
+        step="HPARAMS", data={**vars(args), **vars(config)}, verbosity=1
+    )
 
     model = TemporalFusionTransformer(config).cuda()
     if args.ema_decay:
         model_ema = ModelEma(model, decay=args.ema_decay)
 
-    print_once("Model params: {}".format(sum(p.numel() for p in model.parameters())))
+    print_once(
+        "Model params: {}".format(sum(p.numel() for p in model.parameters()))
+    )
     criterion = QuantileLoss(config).cuda()
     optimizer = FusedAdam(model.parameters(), lr=args.lr)
     if args.use_amp:
@@ -172,53 +185,68 @@ def main(args):
         dllogger.log(step=global_step, data={"epoch": epoch}, verbosity=1)
 
         model.train()
-        for local_step, batch in enumerate(train_loader):
-            perf_meter.reset_current_lap()
-            batch = {
-                key: tensor.cuda() if tensor.numel() else None
-                for key, tensor in batch.items()
-            }
-            predictions = model(batch)
-            targets = batch["target"][:, config.encoder_length :, :]
-            p_losses = criterion(predictions, targets)
-            loss = p_losses.sum()
+        with torch.profiler.profile(
+            schedule=torch.profiler.schedule(
+                wait=1, warmup=1, active=6, repeat=4
+            ),
+            on_trace_ready=torch.profiler.tensorboard_trace_handler(
+                args.results
+            ),
+            record_shapes=True,
+            with_stack=True,
+        ) as prof:
 
-            if args.use_amp:
-                with amp.scale_loss(loss, optimizer) as scaled_loss:
-                    scaled_loss.backward()
-            else:
-                loss.backward()
-            if (
-                not args.grad_accumulation
-                or (global_step + 1) % args.grad_accumulation == 0
-            ):
-                if args.clip_grad:
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip_grad)
-                optimizer.step()
-                optimizer.zero_grad()
-                if args.ema_decay:
-                    model_ema.update(model)
-
-            if args.distributed_world_size > 1:
-                dist.all_reduce(p_losses)
-                p_losses /= args.distributed_world_size
+            for local_step, batch in enumerate(train_loader):
+                perf_meter.reset_current_lap()
+                batch = {
+                    key: tensor.cuda() if tensor.numel() else None
+                    for key, tensor in batch.items()
+                }
+                predictions = model(batch)
+                targets = batch["target"][:, config.encoder_length :, :]
+                p_losses = criterion(predictions, targets)
                 loss = p_losses.sum()
 
-            torch.cuda.synchronize()
-            ips = perf_meter.update(
-                args.batch_size * args.distributed_world_size,
-                exclude_from_total=local_step in [0, len(train_loader) - 1],
-            )
+                if args.use_amp:
+                    with amp.scale_loss(loss, optimizer) as scaled_loss:
+                        scaled_loss.backward()
+                else:
+                    loss.backward()
+                if (
+                    not args.grad_accumulation
+                    or (global_step + 1) % args.grad_accumulation == 0
+                ):
+                    if args.clip_grad:
+                        torch.nn.utils.clip_grad_norm_(
+                            model.parameters(), args.clip_grad
+                        )
+                    optimizer.step()
+                    optimizer.zero_grad()
+                    if args.ema_decay:
+                        model_ema.update(model)
 
-            log_dict = {
-                "P10": p_losses[0].item(),
-                "P50": p_losses[1].item(),
-                "P90": p_losses[2].item(),
-                "loss": loss.item(),
-                "items/s": ips,
-            }
-            dllogger.log(step=global_step, data=log_dict, verbosity=1)
-            global_step += 1
+                if args.distributed_world_size > 1:
+                    dist.all_reduce(p_losses)
+                    p_losses /= args.distributed_world_size
+                    loss = p_losses.sum()
+
+                torch.cuda.synchronize()
+                ips = perf_meter.update(
+                    args.batch_size * args.distributed_world_size,
+                    exclude_from_total=local_step
+                    in [0, len(train_loader) - 1],
+                )
+
+                log_dict = {
+                    "P10": p_losses[0].item(),
+                    "P50": p_losses[1].item(),
+                    "P90": p_losses[2].item(),
+                    "loss": loss.item(),
+                    "items/s": ips,
+                }
+                dllogger.log(step=global_step, data=log_dict, verbosity=1)
+                global_step += 1
+                prof.step()
 
         validate(
             args,

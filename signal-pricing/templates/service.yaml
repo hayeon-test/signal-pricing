@@ -8,9 +8,26 @@ spec:
   type: NodePort
   ports:
     - name: {{ .Values.appPrefix }}-tensorboard
-      nodePort: {{ .Values.service.nodePort }}
+      nodePort: {{ .Values.tensorboardService.nodePort }}
       port: 6006
       protocol: TCP
       targetPort: 6006
   selector:
     app: {{ .Values.appPrefix }}-tensorboard
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.appPrefix }}-analytics
+  labels:
+    app: {{ .Values.appPrefix }}-analytics
+spec:
+  type: NodePort
+  ports:
+    - name: {{ .Values.appPrefix }}-analytics
+      nodePort: {{ .Values.analyticService.nodePort }}
+      port: 8000
+      protocol: TCP
+      targetPort: 8000
+  selector:
+    app: {{ .Values.appPrefix }}-analytics

@@ -1,93 +1,91 @@
 apiVersion: batch/v1
-kind: CronJob
+kind: Job
 metadata:
-  name: {{ .Values.appPrefix }}-training
+  name: {{ .Values.appPrefix }}-bootstrap-training
   labels:
     app: {{ .Values.appPrefix }}
 spec:
-  schedule: "@monthly"
-  jobTemplate:
+  ttlSecondsAfterFinished: 5
+  template:
     metadata:
       labels:
         app: {{ .Values.appPrefix }}
     spec:
-      template:
-        spec:
-          affinity:
-            nodeAffinity:
-              requiredDuringSchedulingIgnoredDuringExecution:
-                nodeSelectorTerms:
-                  - matchExpressions:
-                    - key: nvidia.com/gpu.memory
-                      operator: In
-                      values:
-                      - "20480"
-                      - "24268"
-          imagePullSecrets:
-            - name: ngc-secret
-          restartPolicy: Never
-          containers:
-            - name: {{ .Values.appPrefix }}-training
-              image: "{{ .Values.modelTrainingImage.repository }}:{{ .Values.modelTrainingImage.tag | default .Chart.AppVersion }}"
-              imagePullPolicy: {{ .Values.modelTrainingImage.pullPolicy }}
-              args: 
-                - python 
-                - -m 
-                - torch.distributed.run 
-                - --nproc_per_node={{ .Values.envVars.NGPU }} 
-                - train.py
-                - --dataset=pricing
-                - --data_path=/data/processed/pricing_bin
-                - --batch_size={{ .Values.envVars.BATCH_SIZE }}
-                - --lr={{ .Values.envVars.LR }}
-                - --epochs={{ .Values.envVars.EPOCHS }}
-                - --seed={{ .Values.envVars.SEED }}
-                - --use_amp
-                - --results=/data/results/TFT_pricing_bs{{ .Values.envVars.NGPU }}x{{ .Values.envVars.BATCH_SIZE }}_lr{{ .Values.envVars.LR }}/seed_{{ .Values.envVars.SEED }}
-              env:
-                - name: SEED
-                  value: "{{ .Values.envVars.SEED }}"
-                - name: CUDA_LAUNCH_BLOCKING
-                  value: "-1"
-                - name: LR
-                  value: "{{ .Values.envVars.LR }}"
-                - name: NGPU
-                  value: "{{ .Values.envVars.NGPU }}"
-                - name: BATCH_SIZE
-                  value: "{{ .Values.envVars.BATCH_SIZE }}"
-                - name: EPOCHS
-                  value: "{{ .Values.envVars.EPOCHS }}"
-                - name: VALIDATION_SAMPLE
-                  value: "{{ .Values.envVars.VALIDATION_SAMPLE }}"
-                - name: TRAIN_SAMPLE
-                  value: "{{ .Values.envVars.TRAIN_SAMPLE }}"
-              volumeMounts:
-                - name: dshm
-                  mountPath: /dev/shm
-                - name: {{ .Values.appPrefix }}-storage
-                  mountPath: /data
-          initContainers:
-            - name: {{ .Values.appPrefix }}-feature-engineering
-              image: "{{ .Values.featureEngineeringImage.repository }}:{{ .Values.featureEngineeringImage.tag | default .Chart.AppVersion }}"
-              imagePullPolicy: {{ .Values.featureEngineeringImage.pullPolicy }}
-              command: ["/bin/bash"]
-              args: ["-c", "/workspace/get_data.sh"]
-              env:
-                - name: ALPHA_VANTAGE_API_KEY
-                  value: {{ .Values.envVars.ALPHA_VANTAGE_API_KEY }}
-                - name: SYMBOL
-                  value: {{ .Values.envVars.SYMBOL }}
-                - name: INTERVAL
-                  value: {{ .Values.envVars.INTERVAL }}
-              volumeMounts:
-                - name: dshm
-                  mountPath: /dev/shm
-                - name: {{ .Values.appPrefix }}-storage
-                  mountPath: /data
-          volumes:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: nvidia.com/gpu.memory
+                  operator: In
+                  values:
+                  - "20480"
+                  - "24268"
+      imagePullSecrets:
+        - name: ngc-secret
+      restartPolicy: Never
+      containers:
+        - name: {{ .Values.appPrefix }}-bootstrap-training
+          image: "{{ .Values.modelTrainingImage.repository }}:{{ .Values.modelTrainingImage.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.modelTrainingImage.pullPolicy }}
+          args: 
+            - python 
+            - -m 
+            - torch.distributed.run 
+            - --nproc_per_node={{ .Values.envVars.NGPU }} 
+            - train.py
+            - --dataset=pricing
+            - --data_path=/data/processed/pricing_bin
+            - --batch_size={{ .Values.envVars.BATCH_SIZE }}
+            - --lr={{ .Values.envVars.LR }}
+            - --epochs={{ .Values.envVars.EPOCHS }}
+            - --seed={{ .Values.envVars.SEED }}
+            - --use_amp
+            - --results=/data/results/TFT_pricing_bs{{ .Values.envVars.NGPU }}x{{ .Values.envVars.BATCH_SIZE }}_lr{{ .Values.envVars.LR }}/seed_{{ .Values.envVars.SEED }}
+          env:
+            - name: SEED
+              value: "{{ .Values.envVars.SEED }}"
+            - name: CUDA_LAUNCH_BLOCKING
+              value: "-1"
+            - name: LR
+              value: "{{ .Values.envVars.LR }}"
+            - name: NGPU
+              value: "{{ .Values.envVars.NGPU }}"
+            - name: BATCH_SIZE
+              value: "{{ .Values.envVars.BATCH_SIZE }}"
+            - name: EPOCHS
+              value: "{{ .Values.envVars.EPOCHS }}"
+            - name: VALIDATION_SAMPLE
+              value: "{{ .Values.envVars.VALIDATION_SAMPLE }}"
+            - name: TRAIN_SAMPLE
+              value: "{{ .Values.envVars.TRAIN_SAMPLE }}"
+          volumeMounts:
             - name: dshm
-              emptyDir:
-                medium: Memory
+              mountPath: /dev/shm
             - name: {{ .Values.appPrefix }}-storage
-              persistentVolumeClaim:
-                claimName: {{ .Values.appPrefix }}-pvc
+              mountPath: /data
+      initContainers:
+        - name: {{ .Values.appPrefix }}-feature-engineering
+          image: "{{ .Values.featureEngineeringImage.repository }}:{{ .Values.featureEngineeringImage.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.featureEngineeringImage.pullPolicy }}
+          command: ["/bin/bash"]
+          args: ["-c", "/workspace/get_data.sh"]
+          env:
+            - name: ALPHA_VANTAGE_API_KEY
+              value: {{ .Values.envVars.ALPHA_VANTAGE_API_KEY }}
+            - name: SYMBOL
+              value: {{ .Values.envVars.SYMBOL }}
+            - name: INTERVAL
+              value: {{ .Values.envVars.INTERVAL }}
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            - name: {{ .Values.appPrefix }}-storage
+              mountPath: /data
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+        - name: {{ .Values.appPrefix }}-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.appPrefix }}-pvc

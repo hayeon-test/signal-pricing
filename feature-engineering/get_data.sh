@@ -15,19 +15,28 @@
 
 DS='pricing'
 DS_PATH=/data/raw
-
-if [ ! -d ${DS_PATH} ]
+SUFFIX=$(date -d "today" +"%Y%m%d%H%M")
+if [ -f ${DS_PATH}/standarized.csv ]
 then
-    mkdir -p ${DS_PATH}
-    python get_data.py
+    mv ${DS_PATH}/standarized.csv ${DS_PATH}/standarized-${SUFFIX}.csv
 fi
-    echo "Raw data already exists at ${DS_PATH}, not downloading."
-    rm -rf /data/processed
-    rm -f ${DS_PATH}/standarized.csv
-    mkdir -p /data/processed
+
+if [ -d /data/results ]
+then
+    mv /data/results /data/results-${SUFFIX}
+fi
+
+if [ -d /data/processed ]
+then
+    mv /data/processed /data/processed-${SUFFIX}
+fi
+
+mkdir -p ${DS_PATH}
+mkdir -p /data/processed
+
+python get_data.py
 
 python -c "from data_utils import standarize_${DS} as standarize; standarize(\"${DS_PATH}\")"
-
 python -c "from data_utils import preprocess; \
             from configuration import ${DS^}Config as Config; \
             preprocess(\"${DS_PATH}/standarized.csv\", \"/data/processed/${DS}_bin\", Config())"

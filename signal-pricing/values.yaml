@@ -13,10 +13,16 @@ envVars:
   SYMBOL: NVDA
   TRAIN_SAMPLE: 64000
   VALIDATION_SAMPLE: 14000
+analyticServiceImage:
+  imagePullSecrets:
+    - ngc-secret
+  pullPolicy: IfNotPresent
+  repository: registry.local:31500/signal-pricing-analytic-service
+  tag: ""
 featureEngineeringImage:
   imagePullSecrets:
     - ngc-secret
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
   repository: registry.local:31500/signal-pricing-feature-engineering
   tag: ""
 imageCredentials:
@@ -27,7 +33,7 @@ imageCredentials:
 modelTrainingImage:
   imagePullSecrets:
     - ngc-secret
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
   repository: registry.local:31500/signal-pricing-model-training
   tag: ""
 nfs:
@@ -39,6 +45,8 @@ replicaCount: 1
 resources:
   limits:
     nvidia.com/gpu: 1
-service:
+tensorboardService:
   nodePort: 30600
-tensorboardNode: olympus-01
+analyticService:
+  nodePort: 30800
+uiNode: olympus-01

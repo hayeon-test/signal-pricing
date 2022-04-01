@@ -1,4 +1,23 @@
 services:
+  analytic-service:
+    build:
+      args:
+        - FROM_IMAGE_NAME=python:3.8
+        - SYMBOL=NVDA
+      context: .
+      dockerfile:  Dockerfile.analytics
+      shm_size: "8gb"
+    entrypoint: ["python", "/workspace/analytic-service.py"]
+    ports:
+      - "8000:8000"
+    image: registry.local:31500/signal-pricing-analytic-service:${VERSION}
+    network_mode: "host"
+    platform: linux/amd64
+    runtime: nvidia
+    volumes:
+      - type: bind
+        source: /mnt/nas/signal-pricing
+        target: /data  
   eda:
     build:
       args:
