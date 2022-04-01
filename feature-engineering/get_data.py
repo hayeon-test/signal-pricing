@@ -11,11 +11,7 @@ logging.basicConfig(
 SYMBOL = os.getenv("SYMBOL")
 INTERVAL = os.getenv("INTERVAL")
 DATAPATH = "/data"
-LAG_SLICES = []
-for y in range(1, 3):
-    for m in range(1, 13):
-        LAG_SLICES.append("year{}month{}".format(y, m))
-
+LAG_SLICES = ["year1month1"]
 ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
 
 
@@ -54,4 +50,4 @@ def fetch_to_parquet(
 if __name__ == "__main__":
     for LAG_SLICE in LAG_SLICES:
         fetch_to_parquet(LAG_SLICE)
-        sleep(21)
+        # sleep(21) # API key is rate limited at 5/min, 500/day if using a free key.
