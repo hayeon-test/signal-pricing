@@ -180,7 +180,7 @@ To train your model using mixed or TF32 precision with Tensor Cores, perform the
    helm install signal-pricing signal-pricing \
      --set imageCredentials.password=<NGC_API_KEY> \
      --set imageCredentials.email=<NGC_USER_EMAIL> \
-     --set envVars.ALPHA_VANTAGE_API_KEY=<ALPHA_VANTAGE_API_KEY>
+     --set env.ALPHA_VANTAGE_API_KEY=<ALPHA_VANTAGE_API_KEY>
    ```
 
 ## Advanced

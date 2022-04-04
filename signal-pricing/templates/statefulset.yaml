@@ -15,25 +15,33 @@ spec:
       labels: 
         app: {{ .Values.appPrefix }}-tensorboard
     spec:
-      nodeName: {{ .Values.uiNode }}
       imagePullSecrets:
         - name: ngc-secret
       containers:
         - name: {{ .Values.appPrefix }}-tensorboard
-          image: "nvcr.io/nvidia/tensorflow:22.01-tf2-py3"
+          image: "{{ .Values.modelTraining.repository }}:{{ .Values.modelTraining.tag | default .Chart.AppVersion }}"
           ports:
             - name: tensorboard
               containerPort: 6006
               protocol: TCP
           command: ["/bin/bash"]
-          args: ["-c", "pip install -U tensorboard-plugin-profile torch_tb_profiler && tensorboard --logdir=/data/results --bind_all"]
+          args: ["-c", "tensorboard --logdir=/data/results --bind_all"]
           env:
             - name: CUDA_VISIBLE_DEVICES
               value: "-1"
           volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
             - name: {{ .Values.appPrefix }}-storage
               mountPath: /data/results
+    {{- with .Values.modelTraining.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
         - name: {{ .Values.appPrefix }}-storage
           persistentVolumeClaim:
             claimName: {{ .Values.appPrefix }}-pvc
@@ -55,12 +63,11 @@ spec:
       labels: 
         app: {{ .Values.appPrefix }}-analytics
     spec:
-      nodeName: {{ .Values.uiNode }}
       imagePullSecrets:
         - name: ngc-secret
       containers:
         - name: {{ .Values.appPrefix }}-analytics
-          image: "{{ .Values.analyticServiceImage.repository }}:{{ .Values.analyticServiceImage.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.analyticService.repository }}:{{ .Values.analyticService.tag | default .Chart.AppVersion }}"
           ports:
             - name: analytics
               containerPort: 8000
@@ -70,9 +77,70 @@ spec:
           env:
             - name: CUDA_VISIBLE_DEVICES
               value: "-1"
+        {{- with .Values.analyticService.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
           volumeMounts:
             - name: {{ .Values.appPrefix }}-storage
               mountPath: /data
+      volumes:
+        - name: {{ .Values.appPrefix }}-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.appPrefix }}-pvc
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.appPrefix }}-user
+  labels:
+    app: {{ .Values.appPrefix }}-user
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.appPrefix }}-user
+  serviceName: {{ .Values.appPrefix }}-user
+  replicas: 1
+  template:
+    metadata:
+      labels: 
+        app: {{ .Values.appPrefix }}-user
+    spec:
+      imagePullSecrets:
+        - name: ngc-secret
+      containers:
+        - name: {{ .Values.appPrefix }}-user
+          image: "{{ .Values.analyticUser.repository }}:{{ .Values.analyticUser.tag | default .Chart.AppVersion }}"
+          ports:
+            - name: user
+              containerPort: 8888
+              protocol: TCP
+            - name: dask
+              containerPort: 8786
+              protocol: TCP
+            - name: diagnostic
+              containerPort: 8787
+              protocol: TCP
+          args:
+            - jupyter
+            - lab
+            - --ip=0.0.0.0
+            - --no-browser
+            - --allow-root
+            - --port=8888
+            - --ServerApp.token=''
+            - --ServerApp.password=''
+            - --ServerApp.allow_origin='*'
+            - --ServerApp.base_url=/
+            - --ServerApp.root_dir=/workspace
+            - --LabApp.extensions_in_dev_mode=True
+        {{- with .Values.analyticUser.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+          volumeMounts:
+            - name: {{ .Values.appPrefix }}-storage
+              mountPath: /workspace
       volumes:
         - name: {{ .Values.appPrefix }}-storage
           persistentVolumeClaim:

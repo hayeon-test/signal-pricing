@@ -8,7 +8,7 @@ spec:
   type: NodePort
   ports:
     - name: {{ .Values.appPrefix }}-tensorboard
-      nodePort: {{ .Values.tensorboardService.nodePort }}
+      nodePort: {{ .Values.modelTraining.nodePort }}
       port: 6006
       protocol: TCP
       targetPort: 6006
@@ -31,3 +31,20 @@ spec:
       targetPort: 8000
   selector:
     app: {{ .Values.appPrefix }}-analytics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.appPrefix }}-user
+  labels:
+    app: {{ .Values.appPrefix }}-user
+spec:
+  type: NodePort
+  ports:
+    - name: {{ .Values.appPrefix }}-user
+      nodePort: {{ .Values.analyticUser.nodePort }}
+      port: 8888
+      protocol: TCP
+      targetPort: 8888
+  selector:
+    app: {{ .Values.appPrefix }}-user

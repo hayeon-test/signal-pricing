@@ -16,5 +16,5 @@ spec:
     - hard
     - nfsvers=4.1
   nfs:
-    path: {{ .Values.nfs.path }}
-    server: {{ .Values.nfs.server }}
+    path: {{ .Values.persistentVolume.path }}
+    server: {{ .Values.persistentVolume.server }}

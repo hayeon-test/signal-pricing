@@ -11,13 +11,13 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['{{ .Values.appPrefix }}:{{ .Values.analyticService.port }}']
+      args: ['{{ .Values.appPrefix }}:{{ .Values.analyticService.nodePort }}']
   restartPolicy: Never
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: "{{ .Values.appPrefix }}-test-tensorboard-connection"
+  name: "{{ .Values.appPrefix }}-test-training-connection"
   labels:
     app: {{ .Values.appPrefix }}
   annotations:
@@ -27,5 +27,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['{{ .Values.appPrefix }}:{{ .Values.tensorboardService.port }}']
+      args: ['{{ .Values.appPrefix }}:{{ .Values.modelTraining.nodePort }}']
   restartPolicy: Never

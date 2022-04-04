@@ -2,23 +2,17 @@
 --------------------------------------------------------------------------------
 Installation Complete!
     App:                     {{ .Values.appPrefix }} 
-    modelTrainingImage:      {{ .Values.modelTrainingImage.repository }}
-    featureEngineeringImage: {{ .Values.featureEngineeringImage.repository }}
-    replicaCount:            {{ .Values.replicaCount }} 
-    resources:               {{- toYaml .Values.resources | nindent 12 }}
+    modelTrainingImage:      {{ .Values.modelTraining.repository }}
+    featureEngineeringImage: {{ .Values.featureEngineering.repository }}
+    training resources: {{- toYaml .Values.modelTraining.resources | nindent 8 }}
+    training affinity: {{- toYaml .Values.modelTraining.affinity | nindent 8 }}
 
 You can monitor the application by running the following kubelet commands:
 Workloads:
-    kubectl get all -l 'app in ({{ .Values.appPrefix }},{{ .Values.appPrefix }}-tensorboard,{{ .Values.appPrefix }}-analytics)' -o wide
+    kubectl get all -l 'app in ({{ .Values.appPrefix }},{{ .Values.appPrefix }}-tensorboard,{{ .Values.appPrefix }}-analytics,{{ .Values.appPrefix }}-user)' -o wide
     
 Storage:
     kubectl get sc {{ .Values.appPrefix }}-sc
     kubectl get pv {{ .Values.appPrefix }}-pv
     kubectl get pvc {{ .Values.appPrefix }}-pvc
-
-Tensorboard service will soon be available at:
-    http://{{ .Values.uiNode }}:{{ .Values.tensorboardService.nodePort }}
-
-Analytics service will soon be available at:
-    http://{{ .Values.uiNode }}:{{ .Values.analyticService.nodePort }}
 --------------------------------------------------------------------------------

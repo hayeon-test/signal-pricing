@@ -5,66 +5,63 @@ services:
         - FROM_IMAGE_NAME=python:3.8
         - SYMBOL=NVDA
       context: .
-      dockerfile:  Dockerfile.analytics
-      shm_size: "8gb"
-    entrypoint: ["python", "/workspace/analytic-service.py"]
-    ports:
-      - "8000:8000"
+      dockerfile: Dockerfile.analytics
+      shm_size: 8gb
+    entrypoint:
+      - python
+      - /workspace/analytic-service.py
     image: registry.local:31500/signal-pricing-analytic-service:${VERSION}
-    network_mode: "host"
+    network_mode: host
     platform: linux/amd64
+    ports:
+      - 8000:8000
     runtime: nvidia
     volumes:
-      - type: bind
-        source: /mnt/nas/signal-pricing
-        target: /data  
-  eda:
+      - source: /mnt/nas/signal-pricing
+        target: /data
+        type: bind
+
+  analytic-user:
     build:
       args:
-        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.12-py3
-        - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
-        - SYMBOL=NVDA
-        - INTERVAL=15min
-        - DATAPATH=/data
-        - DS=pricing
+        - FROM_IMAGE_NAME=nvcr.io/nvidia/rapidsai/rapidsai:22.02-cuda11.4-runtime-ubuntu20.04
       context: .
-      dockerfile: Dockerfile.features
-      shm_size: "8gb"
+      dockerfile: Dockerfile.user
+      shm_size: 8gb
     entrypoint:
-      [
-        "jupyter",
-        "lab",
-        "--ip=0.0.0.0",
-        "--no-browser",
-        "--allow-root",
-        "--port=8888",
-        "--notebook-dir=/workspace",
-        "--NotebookApp.token=''",
-        "--NotebookApp.password=''",
-        "--NotebookApp.allow_origin='*'",
-        "--NotebookApp.base_url=/",
-      ]
-    ports:
-      - "8888:8888"
-    image: registry.local:31500/signal-pricing-eda:${VERSION}
-    network_mode: "host"
+      - jupyter
+      - lab
+      - --ip=0.0.0.0
+      - --no-browser
+      - --allow-root
+      - --port=8888
+      - --notebook-dir=/workspace
+      - --NotebookApp.token=''
+      - --NotebookApp.password=''
+      - --NotebookApp.allow_origin='*'
+      - --NotebookApp.base_url=/
+    image: registry.local:31500/signal-pricing-analytic-user:${VERSION}
+    network_mode: host
     platform: linux/amd64
+    ports:
+      - 8888:8888
     runtime: nvidia
-    shm_size: "8gb"
+    shm_size: 8gb
     ulimits:
       memlock: -1
       stack: 67108864
     volumes:
-      - type: bind
-        source: /mnt/nas/signal-pricing
+      - source: /mnt/nas/signal-pricing
         target: /data
-      - type: bind
-        source: ./feature-engineering
+        type: bind
+      - source: ./analytic-user
         target: /workspace
+        type: bind
+
   feature-engineering:
     build:
       args:
-        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.12-py3
+        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.09-py3
         - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
         - SYMBOL=NVDA
         - INTERVAL=15min
@@ -72,51 +69,35 @@ services:
         - DS=pricing
       context: .
       dockerfile: Dockerfile.features
-      shm_size: "8gb"
+      shm_size: 8gb
     command: ./get_data.sh
     image: registry.local:31500/signal-pricing-feature-engineering:${VERSION}
-    network_mode: "host"
+    network_mode: host
     platform: linux/amd64
     runtime: nvidia
-    shm_size: "8gb"
+    shm_size: 8gb
     ulimits:
       memlock: -1
       stack: 67108864
     volumes:
-      - type: bind
-        source: /mnt/nas/signal-pricing
+      - source: /mnt/nas/signal-pricing
         target: /data
+        type: bind
+
   model-training:
     build:
       args:
-        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.10-py3
+        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.09-py3
         - DATAPATH=/data
       context: .
       dockerfile: Dockerfile.training
-      shm_size: "8gb"
+      shm_size: 8gb
     command: ./run_training.sh
     image: registry.local:31500/signal-pricing-model-training:${VERSION}
-    network_mode: "host"
+    network_mode: host
     platform: linux/amd64
     runtime: nvidia
-    shm_size: "8gb"
-    ulimits:
-      memlock: -1
-      stack: 67108864
-  inference:
-    build:
-      args:
-        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.10-py3
-        - DATAPATH=/data
-      context: .
-      dockerfile: Dockerfile.training
-      shm_size: "8gb"
-    command: ./run_training.sh
-    image: registry.local:31500/signal-pricing-inference:${VERSION}
-    network_mode: "host"
-    platform: linux/amd64
-    runtime: nvidia
-    shm_size: "8gb"
+    shm_size: 8gb
     ulimits:
       memlock: -1
       stack: 67108864

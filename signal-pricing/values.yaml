@@ -2,24 +2,46 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 appPrefix: signal-pricing
-envVars:
-  ALPHA_VANTAGE_API_KEY: demo
-  BATCH_SIZE: 64
-  EPOCHS: 20
-  INTERVAL: 15min
-  LR: 1e-3
-  NGPU: 1
-  SEED: 1
-  SYMBOL: NVDA
-  TRAIN_SAMPLE: 64000
-  VALIDATION_SAMPLE: 14000
-analyticServiceImage:
+
+analyticService:
+  nodeName:
+  env:
+    SYMBOL: NVDA
   imagePullSecrets:
     - ngc-secret
+  nodePort: 30800
   pullPolicy: IfNotPresent
   repository: registry.local:31500/signal-pricing-analytic-service
+  resources:
+    requests:
+      cpu: 2500m
+      memory: 8Gi
   tag: ""
-featureEngineeringImage:
+
+analyticUser:
+  env:
+    SYMBOL: NVDA
+  imagePullSecrets:
+    - ngc-secret
+  nodePort: 30888
+  pullPolicy: IfNotPresent
+  repository: registry.local:31500/signal-pricing-analytic-user
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+    requests:
+      cpu: 2500m
+      memory: 16Gi
+    limits:
+      cpu: 5000m
+      memory: 32Gi
+  tag: ""
+
+featureEngineering:
+  env:
+    ALPHA_VANTAGE_API_KEY: demo
+    INTERVAL: 15min
+    SYMBOL: NVDA
   imagePullSecrets:
     - ngc-secret
   pullPolicy: IfNotPresent
@@ -30,23 +52,36 @@ imageCredentials:
   password: api-key
   registry: nvcr.io
   username: $oauthtoken
-modelTrainingImage:
+modelTraining:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+            - key: nvidia.com/gpu.memory
+              operator: In
+              values:
+                - "20480"
+                - "24268"
+  resources:
+    limits:
+      nvidia.com/gpu: 1
+  env:
+    BATCH_SIZE: 512
+    EPOCHS: 20
+    LR: 1e-3
+    NGPU: 1
+    SEED: 1
+    SYMBOL: NVDA
+    TRAIN_SAMPLE: 64000
+    VALIDATION_SAMPLE: 14000
   imagePullSecrets:
     - ngc-secret
+  nodePort: 30600
   pullPolicy: IfNotPresent
   repository: registry.local:31500/signal-pricing-model-training
   tag: ""
-nfs:
+persistentVolume:
   path: /volume1/brandon/signal-pricing
   server: 192.168.1.232
-persistentVolume:
   storage: 128Gi
-replicaCount: 1
-resources:
-  limits:
-    nvidia.com/gpu: 1
-tensorboardService:
-  nodePort: 30600
-analyticService:
-  nodePort: 30800
-uiNode: olympus-01
