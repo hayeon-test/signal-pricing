@@ -10,13 +10,13 @@ analyticService:
   imagePullSecrets:
     - ngc-secret
   nodePort: 30800
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   repository: registry.local:31500/signal-pricing-analytic-service
   resources:
     requests:
       cpu: 2500m
       memory: 8Gi
-  tag: ""
+
 
 analyticUser:
   env:
@@ -24,7 +24,7 @@ analyticUser:
   imagePullSecrets:
     - ngc-secret
   nodePort: 30888
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   repository: registry.local:31500/signal-pricing-analytic-user
   resources:
     limits:
@@ -35,7 +35,7 @@ analyticUser:
     limits:
       cpu: 5000m
       memory: 32Gi
-  tag: ""
+
 
 featureEngineering:
   env:
@@ -44,14 +44,15 @@ featureEngineering:
     SYMBOL: NVDA
   imagePullSecrets:
     - ngc-secret
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   repository: registry.local:31500/signal-pricing-feature-engineering
-  tag: ""
+
 imageCredentials:
   email: user@nvidia.com
   password: api-key
   registry: nvcr.io
   username: $oauthtoken
+
 modelTraining:
   affinity:
     nodeAffinity:
@@ -78,9 +79,10 @@ modelTraining:
   imagePullSecrets:
     - ngc-secret
   nodePort: 30600
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   repository: registry.local:31500/signal-pricing-model-training
-  tag: ""
+  tensorboardImage: nvcr.io/nvidia/tensorflow:21.12-tf2-py3
+
 persistentVolume:
   path: /volume1/brandon/signal-pricing
   server: 192.168.1.232

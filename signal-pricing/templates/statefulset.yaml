@@ -19,13 +19,14 @@ spec:
         - name: ngc-secret
       containers:
         - name: {{ .Values.appPrefix }}-tensorboard
-          image: "{{ .Values.modelTraining.repository }}:{{ .Values.modelTraining.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.modelTraining.tensorboardImage }}"
+          imagePullPolicy: Always
           ports:
             - name: tensorboard
               containerPort: 6006
               protocol: TCP
           command: ["/bin/bash"]
-          args: ["-c", "tensorboard --logdir=/data/results --bind_all"]
+          args: ["-c", "pip install tensorboard-plugin-profile torch_tb_profiler; tensorboard --logdir=/data/results --bind_all"]
           env:
             - name: CUDA_VISIBLE_DEVICES
               value: "-1"
@@ -68,6 +69,7 @@ spec:
       containers:
         - name: {{ .Values.appPrefix }}-analytics
           image: "{{ .Values.analyticService.repository }}:{{ .Values.analyticService.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: Always
           ports:
             - name: analytics
               containerPort: 8000
@@ -111,6 +113,7 @@ spec:
       containers:
         - name: {{ .Values.appPrefix }}-user
           image: "{{ .Values.analyticUser.repository }}:{{ .Values.analyticUser.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: Always
           ports:
             - name: user
               containerPort: 8888

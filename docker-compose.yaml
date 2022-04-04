@@ -61,7 +61,7 @@ services:
   feature-engineering:
     build:
       args:
-        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.09-py3
+        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.12-py3
         - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
         - SYMBOL=NVDA
         - INTERVAL=15min
@@ -84,10 +84,28 @@ services:
         target: /data
         type: bind
 
+  model-inference:
+    build:
+      args:
+        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.12-py3
+        - DATAPATH=/data
+      context: .
+      dockerfile: Dockerfile.inference
+      shm_size: 8gb
+    command: ./run_training.sh
+    image: registry.local:31500/signal-pricing-model-inference:${VERSION}
+    network_mode: host
+    platform: linux/amd64
+    runtime: nvidia
+    shm_size: 8gb
+    ulimits:
+      memlock: -1
+      stack: 67108864
+      
   model-training:
     build:
       args:
-        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.09-py3
+        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.12-py3
         - DATAPATH=/data
       context: .
       dockerfile: Dockerfile.training

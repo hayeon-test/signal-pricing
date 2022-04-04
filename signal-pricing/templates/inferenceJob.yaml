@@ -1,0 +1,56 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.appPrefix }}-inference
+  labels:
+    app: {{ .Values.appPrefix }}
+spec:
+  ttlSecondsAfterFinished: 5
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appPrefix }}
+    spec:
+    {{- with .Values.modelTraining.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      imagePullSecrets:
+        - name: ngc-secret
+      restartPolicy: Never
+      containers:
+        - name: {{ .Values.appPrefix }}-inference
+          image: "{{ .Values.modelTraining.repository }}:{{ .Values.modelTraining.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.modelTraining.pullPolicy }}
+          args:
+            - python
+            - /workspace/inference.py
+            - --checkpoint=/data/results/TFT_pricing_bs{{ .Values.modelTraining.env.NGPU }}x{{ .Values.modelTraining.env.BATCH_SIZE }}_lr{{ .Values.modelTraining.env.LR }}/seed_{{ .Values.modelTraining.env.SEED }}/checkpoint.pt
+            - --data=/data/processed/pricing_bin/test.csv
+            - --tgt_scalers=/data/processed/pricing_bin/tgt_scalers.bin
+            - --cat_encodings=/data/processed/pricing_bin/cat_encodings.bin
+            - --batch_size={{ .Values.modelTraining.env.BATCH_SIZE }}
+            - --results=/data/results/TFT_pricing_bs{{ .Values.modelTraining.env.NGPU }}x{{ .Values.modelTraining.env.BATCH_SIZE }}_lr{{ .Values.modelTraining.env.LR }}/seed_{{ .Values.modelTraining.env.SEED }}
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            - name: {{ .Values.appPrefix }}-storage
+              mountPath: /data
+      initContainers:
+        - name: {{ .Values.appPrefix }}-poll-checkpoint
+          image: "{{ .Values.featureEngineering.repository }}:{{ .Values.featureEngineering.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.featureEngineering.pullPolicy }}
+          command: ["/bin/sh"]
+          args: ["-c", "until test -f /data/results/TFT_pricing_bs{{ .Values.modelTraining.env.NGPU }}x{{ .Values.modelTraining.env.BATCH_SIZE }}_lr{{ .Values.modelTraining.env.LR }}/seed_{{ .Values.modelTraining.env.SEED }}/checkpoint.pt; do echo waiting for checkpoint...; sleep 1; done"]
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            - name: {{ .Values.appPrefix }}-storage
+              mountPath: /data
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+        - name: {{ .Values.appPrefix }}-storage
+          persistentVolumeClaim:
+            claimName: {{ .Values.appPrefix }}-pvc

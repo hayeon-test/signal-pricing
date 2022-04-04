@@ -21,7 +21,7 @@ spec:
       containers:
         - name: {{ .Values.appPrefix }}-bootstrap-training
           image: "{{ .Values.modelTraining.repository }}:{{ .Values.modelTraining.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.modelTraining.pullPolicy }}
+          imagePullPolicy: Always
           args: 
             - python 
             - -m 
@@ -65,7 +65,7 @@ spec:
       initContainers:
         - name: {{ .Values.appPrefix }}-feature-engineering
           image: "{{ .Values.featureEngineering.repository }}:{{ .Values.featureEngineering.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.featureEngineering.pullPolicy }}
+          imagePullPolicy: Always
           command: ["/bin/bash"]
           args: ["-c", "/workspace/get_data.sh"]
           env:
