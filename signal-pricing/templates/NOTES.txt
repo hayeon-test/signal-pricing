@@ -9,7 +9,7 @@ Installation Complete!
 
 You can monitor the application by running the following kubelet commands:
 Workloads:
-    kubectl get all -l 'app in ({{ .Values.appPrefix }},{{ .Values.appPrefix }}-tensorboard,{{ .Values.appPrefix }}-analytics,{{ .Values.appPrefix }}-user, {{ .Values.appPrefix }}-inference)' -o wide
+    kubectl get all -l 'app in ({{ .Values.appPrefix }},{{ .Values.appPrefix }}-tensorboard,{{ .Values.appPrefix }}-analytics,{{ .Values.appPrefix }}-user,{{ .Values.appPrefix }}-inference)' -o wide
     
 Storage:
     kubectl get sc {{ .Values.appPrefix }}-sc

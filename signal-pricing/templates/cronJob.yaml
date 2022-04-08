@@ -41,8 +41,6 @@ spec:
               env:
                 - name: SEED
                   value: "{{ .Values.modelTraining.env.SEED }}"
-                - name: CUDA_LAUNCH_BLOCKING
-                  value: "-1"
                 - name: LR
                   value: "{{ .Values.modelTraining.env.LR }}"
                 - name: NGPU

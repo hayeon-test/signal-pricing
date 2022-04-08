@@ -17,7 +17,6 @@ analyticService:
       cpu: 2500m
       memory: 8Gi
 
-
 analyticUser:
   env:
     SYMBOL: NVDA
@@ -33,9 +32,8 @@ analyticUser:
       cpu: 2500m
       memory: 16Gi
     limits:
-      cpu: 5000m
+      cpu: 10000m
       memory: 32Gi
-
 
 featureEngineering:
   env:
@@ -59,19 +57,20 @@ modelTraining:
       requiredDuringSchedulingIgnoredDuringExecution:
         nodeSelectorTerms:
           - matchExpressions:
-            - key: nvidia.com/gpu.memory
+            - key: nvidia.com/gpu.count
               operator: In
               values:
-                - "20480"
-                - "24268"
+                - "2"
+                - "4"
+                - "8"
   resources:
     limits:
-      nvidia.com/gpu: 1
+      nvidia.com/gpu: 2
   env:
     BATCH_SIZE: 512
     EPOCHS: 20
     LR: 1e-3
-    NGPU: 1
+    NGPU: 2
     SEED: 1
     SYMBOL: NVDA
     TRAIN_SAMPLE: 64000

@@ -24,7 +24,7 @@ services:
   analytic-user:
     build:
       args:
-        - FROM_IMAGE_NAME=nvcr.io/nvidia/rapidsai/rapidsai:22.02-cuda11.4-runtime-ubuntu20.04
+        - FROM_IMAGE_NAME=nvcr.io/nvidia/rapidsai/rapidsai:22.02-cuda11.5-runtime-ubuntu20.04
       context: .
       dockerfile: Dockerfile.user
       shm_size: 8gb
@@ -61,7 +61,7 @@ services:
   feature-engineering:
     build:
       args:
-        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.12-py3
+        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:22.02-py3
         - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
         - SYMBOL=NVDA
         - INTERVAL=15min
@@ -87,7 +87,7 @@ services:
   model-inference:
     build:
       args:
-        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.12-py3
+        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:22.02-py3
         - DATAPATH=/data
       context: .
       dockerfile: Dockerfile.inference
@@ -105,7 +105,7 @@ services:
   model-training:
     build:
       args:
-        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:21.12-py3
+        - FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:22.02-py3
         - DATAPATH=/data
       context: .
       dockerfile: Dockerfile.training

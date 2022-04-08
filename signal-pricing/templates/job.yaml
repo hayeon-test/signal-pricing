@@ -34,13 +34,10 @@ spec:
             - --lr={{ .Values.modelTraining.env.LR }}
             - --epochs={{ .Values.modelTraining.env.EPOCHS }}
             - --seed={{ .Values.modelTraining.env.SEED }}
-            - --use_amp
             - --results=/data/results/TFT_pricing_bs{{ .Values.modelTraining.env.NGPU }}x{{ .Values.modelTraining.env.BATCH_SIZE }}_lr{{ .Values.modelTraining.env.LR }}/seed_{{ .Values.modelTraining.env.SEED }}
           env:
             - name: SEED
               value: "{{ .Values.modelTraining.env.SEED }}"
-            - name: CUDA_LAUNCH_BLOCKING
-              value: "-1"
             - name: LR
               value: "{{ .Values.modelTraining.env.LR }}"
             - name: NGPU
